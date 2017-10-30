@@ -1,31 +1,38 @@
 package org.ctlv.proxmox.tester;
 
 
+
 import org.ctlv.proxmox.api.ProxmoxAPI;
-import org.ctlv.proxmox.generator.Generator;
 import org.ctlv.proxmox.monitor.Controler;
 import org.ctlv.proxmox.monitor.Organizer;
 
 public class Main {	
 	
+	/**
+	 * To execute the project : launch the following main and the main situated in Generator file.
+	 * Do this with 2 threads was not working. We had to make two processus.
+	 */
 	public static void main(String[] args) {
-		
-		Generator generator = new Generator() ; 
-		
+	
 		ProxmoxAPI api = new ProxmoxAPI() ; 
-		
+						
 		Organizer organizer = new Organizer(api) ; 
 		
 		Controler controler = new Controler(api, organizer) ;
 		
-		generator.run();
+		//controler.startAllMyCTs();
 		
-		controler.run(); 		
+		//controler.stopAllMyCT(); 
+		
+		controler.control();
+				
 		
 		
 	}
 	
 }
+
+
 	/*public static void main(String[] args) throws LoginException, JSONException, IOException {
 
 		ProxmoxAPI api = new ProxmoxAPI();		

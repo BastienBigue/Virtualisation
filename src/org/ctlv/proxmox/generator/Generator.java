@@ -13,28 +13,33 @@ import org.ctlv.proxmox.api.data.LXC;
 import org.json.JSONException;
 
 
-public class Generator implements Runnable{
+public class Generator {
 	
-	public Generator() {}
+	
+	public Generator() { }
 	
 	static Random rndTime = new Random(new Date().getTime());
-	public static int getNextEventPeriodic(int period) {
-		return period * 1000 * 60;
+	
+	public static int getNextEventPeriodicSec(int period) {
+		return period * 1000 ; 
 	}
+	
 	public static int getNextEventUniform(int max) {
 		return rndTime.nextInt(max);
 	}
+	
 	public static int getNextEventExponential(int inv_lambda) {
 		float next = (float) (- Math.log(rndTime.nextFloat()) * inv_lambda);
 		return (int)next;
 	}
 	
-	public void run() {		
+	public static void main(String[] args) {	
+		
+		ProxmoxAPI api = new ProxmoxAPI() ; 
 	
 		long baseID = Constants.CT_BASE_ID;
 		long index = 0 ; 
 
-		ProxmoxAPI api = new ProxmoxAPI();
 		Random rndServer = new Random(new Date().getTime());
 		
 		try {
@@ -43,7 +48,7 @@ public class Generator implements Runnable{
 			
 			while (true) {
 				
-				// 1. Calculer la quantite de RAM utilisee par mes CTs sur chaque serveur
+				//Calcule la quantite de RAM utilisee par mes CTs sur chaque serveur
 				long memOnServer1 = 0;
 				List<LXC> cts1 = api.getCTs(Constants.SERVER1);
 				for (LXC lxc : cts1) {
@@ -56,24 +61,51 @@ public class Generator implements Runnable{
 					memOnServer2 += lxc.getMem() ; 
 				}
 				
-
+				//Si on ne dépasse pas le seuil de 16% de la mémoire totale des deux serveurs: 
 				if (memOnServer1 < memAllowedOnServer1 && memOnServer2 < memAllowedOnServer2) {
-					
-					// choisir un serveur aleatoirement avec les ratios specifies 66% vs 33%
+										
+					//Choix aléatoire entre les deux serveurs (66%/33%)
 					String serverName;
 					if (rndServer.nextFloat() < Constants.CT_CREATION_RATIO_ON_SERVER1)
 						serverName = Constants.SERVER1;
 					else
 						serverName = Constants.SERVER2;
 					
-					api.createCT(serverName, Long.toString(baseID+index), Constants.CT_BASE_NAME + index, 512);// cr�er un contenaire sur ce serveur
-					
-					index ++ ; 				
-					// attendre jusqu'au prochain evenement
-					Thread.sleep(getNextEventPeriodic(1));
+					//Création et lancement du container.
+					//Si le nom du container qui tente d'etre créé est déjà pris, un autre nom est trouvé.
+					//On attend que le container c soit lancé avant de commencer a créer le container c+1.
+					boolean started = false ; 
+					while (!started) {
+						try {
+							String ctID = Long.toString(baseID+index) ; 
+							api.createCT(serverName, ctID, Constants.CT_BASE_NAME + index, 512);
+							System.out.println("Creation of CT" + ctID + "...");
+							LXC ct = api.getCT(serverName, ctID) ; 
+							System.out.println("Wait until CT is created...");	
+							while (!ct.getStatus().equals("running")) {
+								try {
+									api.startCT(serverName, ctID);
+								} catch (Exception e) {
+									System.out.println("Start did not work because CT is not created yet. Will try again.") ; 
+								}
+								Thread.sleep(getNextEventPeriodicSec(2));
+								ct = api.getCT(serverName, ctID) ; 
+							}
+							System.out.println(ct.getName() + " is now running");
+							started = true ;
+							index++ ; 
+						} catch (IOException e) {
+							//Le nom du container est déjà pris : on modifie l'index pour trouver un nouveau nom.
+							index++ ; 
+						}
+					}
+
+					//Attendre un peu avant de créer le prochain container.
+					Thread.sleep(getNextEventPeriodicSec(10));
 				}
 				else {
-					System.out.println("Servers are loaded, waiting 5 more seconds ...");
+					//Les serveurs sont pleins, attendre un moment avant de retenter de créer un container.
+					System.out.println("Servers are full, waiting 5 more seconds ...");
 					Thread.sleep(Constants.GENERATION_WAIT_TIME* 1000);
 				}
 			}
@@ -82,10 +114,6 @@ public class Generator implements Runnable{
 			e.printStackTrace();
 		} catch (InterruptedException e) {
 			e.printStackTrace();
-		}
-		
-		
-		
+		}		
 	}
-
 }

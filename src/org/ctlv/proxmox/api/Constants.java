@@ -23,7 +23,7 @@ public class Constants {
 	public static float CT_CREATION_RATIO_ON_SERVER2 = 0.33f;
 	public static long RAM_SIZE[] = new long[]{256, 512, 768};
 	
-	public static long MONITOR_PERIOD = 10;
+	public static long MONITOR_PERIOD = 20;
 	public static float MIGRATION_THRESHOLD = 0.08f;
 	public static float DROPPING_THRESHOLD = 0.12f;
 	public static float MAX_THRESHOLD = 0.16f;
