@@ -157,4 +157,27 @@ public class Controler {
 		}
 	}
 
+
+	/**
+	 * To execute the project : launch the following main and the main situated in Generator file.
+	 * Do this with 2 threads was not working. We had to make two processus.
+	 */
+	public static void main(String[] args) {
+
+		ProxmoxAPI api = new ProxmoxAPI() ; 
+
+		Organizer organizer = new Organizer(api) ; 
+
+		Controler controler = new Controler(api, organizer) ;
+
+		//controler.startAllMyCTs();
+
+		//controler.stopAllMyCT(); 
+
+		controler.control();
+
+
+
+	}
+
 }

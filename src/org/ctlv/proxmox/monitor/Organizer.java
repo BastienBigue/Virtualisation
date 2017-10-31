@@ -34,7 +34,8 @@ public class Organizer {
 				} catch (Exception e) {
 					System.out.println(e.getMessage());
 				}
-				ct = api.getCT(srvFrom, ctID) ; 
+				ct = api.getCT(srvFrom, ctID) ;
+				Thread.sleep(Generator.getNextEventPeriodicSec(2));
 			}
 			System.out.println(ct.getName() + " is stopped");
 			api.migrateCT(srvFrom, ct.getVmid(), srvTo);
